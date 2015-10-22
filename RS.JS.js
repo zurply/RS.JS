@@ -667,8 +667,9 @@ Handlebars.registerHelper('checked', function (isChecked, inverse, options) {
 });
 
 Handlebars.registerHelper('dateFormat', function (date, format, options) {
-    format = format || 'mmm d, yyyy HH:MM';
-	
+    if (typeof format === 'object' || format === null)
+        format = 'mmm d, yyyy HH:MM';
+
     return date ? date.parseDate().format(format) : null;
 });
 
@@ -678,6 +679,10 @@ Handlebars.registerHelper('json', function (context) {
 
 Handlebars.registerHelper('log', function (variable) {
     console.log(variable);
+});
+
+Handlebars.registerHelper("random", function (min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
 });
 
 RS.HandlebarsRenderer = (function () {
