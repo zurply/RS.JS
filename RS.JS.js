@@ -284,11 +284,11 @@ RS.Alerter = (function (selector, templateId) {
 
     this.Options = {
         AutoHide: true,
-        AutoHideAfter: 5000
+        AutoHideAfter: 5000,
+        selector: selector || ".primary-alert",
+        templateId: templateId || 'alert-template'
     };
 
-    selector = selector || ".primary-alert";
-    templateId = templateId || 'alert-template';
     var defaultContainer = $("body");
     var hideTimeoutId = null;
 
@@ -299,10 +299,10 @@ RS.Alerter = (function (selector, templateId) {
     var getAlert = function (createIfNotExists, container) {
         container = container || defaultContainer;
 
-        var alert = container.find(selector);
+        var alert = container.find(self.Options.selector);
         if (!alert.length && createIfNotExists) {
             if (!templates.alert)
-                templates.alert = Handlebars.compile($("#" + templateId).html());
+                templates.alert = Handlebars.compile($("#" + self.Options.templateId).html());
 
             alert = $(templates.alert({}));
             container.append(alert);
