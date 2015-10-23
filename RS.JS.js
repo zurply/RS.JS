@@ -1,4 +1,22 @@
-var RS = {};
+var RS = function () {
+    var self = this;
+
+    this.initialize = function () {
+        $(document).keydown(function (e) {
+            if (e.keyCode == RS.Keys.ESCAPE) {
+                if (RS.Alerter.isVisible()) {
+                    RS.Alerter.hide();
+
+                    return false;
+                }
+            }
+        });
+
+        return self;
+    };
+};
+
+RS = new RS().initialize();
 
 RS.Constants = {
     Errors: {
@@ -255,21 +273,21 @@ String.removeNonAlphaNumeric = String.prototype.removeNonAlphaNumeric = function
     return string;
 };
 
-var AlertTypes = {
-    Success: 'Success',
-    Info: 'Info',
-    Warning: 'Warning',
-    Danger: 'Danger',
-};
-
-var Alerter = function (selector, templateId) {
+RS.Alerter = (function (selector, templateId) {
     var self = this;
 
+    this.Options = {
+        AutoHide: true,
+        AutoHideAfter: 5000
+    };
+
+    selector = selector || ".primary-alert";
     templateId = templateId || 'alert-template';
     var defaultContainer = $("body");
+    var hideTimeoutId = null;
 
     var templates = {
-        alert: Handlebars.compile($("#" + templateId).html())
+        alert: null
     };
 
     var getAlert = function (createIfNotExists, container) {
@@ -277,8 +295,14 @@ var Alerter = function (selector, templateId) {
 
         var alert = container.find(selector);
         if (!alert.length && createIfNotExists) {
+            if (!templates.alert)
+                templates.alert = Handlebars.compile($("#" + templateId).html());
+
             alert = $(templates.alert({}));
             container.append(alert);
+
+            if (self.Options.AutoHide && self.Options.AutoHideAfter)
+                hideTimeoutId = setTimeout(function () { hide(container); }, self.Options.AutoHideAfter)
         }
 
         return alert;
@@ -320,16 +344,16 @@ var Alerter = function (selector, templateId) {
 
     return {
         showInfo: function (message, title, container) {
-            show(AlertTypes.Info, title, message, container);
+            show(RS.Alerter.AlertTypes.Info, title, message, container);
         },
         showWarning: function (message, title, container) {
-            show(AlertTypes.Warning, title, message, container);
+            show(RS.Alerter.AlertTypes.Warning, title, message, container);
         },
         showSuccess: function (message, title, container) {
-            show(AlertTypes.Success, title, message, container);
+            show(RS.Alerter.AlertTypes.Success, title, message, container);
         },
         showDanger: function (message, title, container) {
-            show(AlertTypes.Danger, title, message, container);
+            show(RS.Alerter.AlertTypes.Danger, title, message, container);
         },
         show: function (alertType, message, title, container) {
             show(alertType, title, message, container);
@@ -344,9 +368,14 @@ var Alerter = function (selector, templateId) {
             setDefaultContainer(container);
         }
     };
-};
+})();
 
-RS.Alerter = new Alerter(".primary-alert", 'alert-template');
+RS.Alerter.AlertTypes = {
+    Success: 'Success',
+    Info: 'Info',
+    Warning: 'Warning',
+    Danger: 'Danger',
+};
 
 RS.Cache = (function () {
     var getValue = function (key, defaultValue) {
@@ -368,6 +397,33 @@ RS.Cache = (function () {
         }
     };
 })();
+
+function extend(subClass, superClass) {
+    var f = function () { };
+    f.prototype = superClass.prototype;
+    subClass.prototype = new f();
+    subClass.prototype.constructor = subClass;
+
+    subClass.superclass = superClass.prototype;
+    if (superClass.prototype.constructor == Object.prototype.constructor) {
+        superClass.prototype.constructor = superClass;
+    }
+};
+
+var override = function (f, newCode) {
+    if (!f)
+        return null;
+
+    if (!newCode)
+        return f;
+    var proxied = f;
+
+    f = function () {
+        proxied.apply(this, arguments);
+        return newCode.apply(this, arguments);
+    };
+    return f;
+};
 
 RS.Event = {
     getEvent: function (e) {
