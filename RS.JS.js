@@ -285,8 +285,8 @@ RS.Alerter = (function (selector, templateId) {
     this.Options = {
         AutoHide: true,
         AutoHideAfter: 5000,
-        selector: selector || ".primary-alert",
-        templateId: templateId || 'alert-template'
+        Selector: selector || ".primary-alert",
+        TemplateId: templateId || 'alert-template'
     };
 
     var defaultContainer = $("body");
@@ -299,10 +299,10 @@ RS.Alerter = (function (selector, templateId) {
     var getAlert = function (createIfNotExists, container) {
         container = container || defaultContainer;
 
-        var alert = container.find(self.Options.selector);
+        var alert = container.find(self.Options.Selector);
         if (!alert.length && createIfNotExists) {
             if (!templates.alert)
-                templates.alert = Handlebars.compile($("#" + self.Options.templateId).html());
+                templates.alert = Handlebars.compile($("#" + self.Options.TemplateId).html());
 
             alert = $(templates.alert({}));
             container.append(alert);
@@ -372,6 +372,9 @@ RS.Alerter = (function (selector, templateId) {
         },
         setDefaultContainer: function (container) {
             setDefaultContainer(container);
+        },
+        getOptions: function () {
+            return self.Options;
         }
     };
 })();
