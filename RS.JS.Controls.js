@@ -41,7 +41,34 @@ RS.Controls.Control = function (options, container, isInherited) {
     };
 
     this.initializeFromContainer = function () {
+        if (!container)
+            return self;
 
+        var templateIdFromAttribute = container.attr('data-template');
+        var itemTemplateIdFromAttribute = container.attr('data-item-template');
+
+        if (!templateIdFromAttribute && !itemTemplateIdFromAttribute)
+            return self;
+
+        var template = self.getDefaultTemplate();
+        if (!template) {
+            template = {
+                IsDefault: true
+            };
+
+            if (!self.Options.Templates)
+                self.Options.Templates = [];
+
+            self.Options.Templates.push(template);
+        }
+
+        if (templateIdFromAttribute)
+            template.Id = templateIdFromAttribute;
+
+        if (itemTemplateIdFromAttribute)
+            template.ItemTemplateId = itemTemplateIdFromAttribute;
+
+        return self;
     };
 
     this.appendTo = function (parent, replace) {
@@ -1564,7 +1591,8 @@ RS.Controls.DataControl = function (options, container, isInherited) {
         },
         HighlightFirst: true,
         CanSelect: true,
-        CanHighlight: true
+        CanHighlight: true,
+        RefreshAfterDataSourceChanged: true
     };
 
     if (options)
@@ -1780,6 +1808,9 @@ RS.Controls.DataControl = function (options, container, isInherited) {
 
         self.Options.DataSource = dataSource;
         setDataSourceEvents(dataSource);
+
+        if (dataSource && self.Options.RefreshAfterDataSourceChanged)
+            dataSource.refresh();
 
         return self;
     };
@@ -2227,6 +2258,8 @@ RS.Controls.List = function (options, container, isInherited) {
 
     RS.Controls.List.superclass.constructor.call(this, self.Options, container, true);
 
+    this.Elements.Me = null;
+
     this.initialize = override(self.initialize, function () {
         console.log('list');
 
@@ -2245,6 +2278,8 @@ RS.Controls.List = function (options, container, isInherited) {
 
     if (!isInherited)
         self.initialize();
+
+    self.appendTo(container, true);
 };
 extend(RS.Controls.List, RS.Controls.DataControl);
 
@@ -2328,5 +2363,68 @@ RS.Controls.ControlsGenerator.registerBuilder('Button', {
     Name: 'Button',
     build: function (el) {
         new RS.Controls.Button(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('ToggleButton', {
+    Name: 'ToggleButton',
+    build: function (el) {
+        new RS.Controls.ToggleButton(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('ButtonGroup', {
+    Name: 'ButtonGroup',
+    build: function (el) {
+        new RS.Controls.ButtonGroup(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('Modal', {
+    Name: 'Modal',
+    build: function (el) {
+        new RS.Controls.ButtonGroup(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('Tooltip', {
+    Name: 'Tooltip',
+    build: function (el) {
+        new RS.Controls.Tooltip(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('Popover', {
+    Name: 'Popover',
+    build: function (el) {
+        new RS.Controls.Popover(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('Dropdown', {
+    Name: 'Dropdown',
+    build: function (el) {
+        new RS.Controls.Dropdown(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('ButtonDropdown', {
+    Name: 'ButtonDropdown',
+    build: function (el) {
+        new RS.Controls.ButtonDropdown(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('SplitButton', {
+    Name: 'SplitButton',
+    build: function (el) {
+        new RS.Controls.SplitButton(null, el);
+    }
+});
+
+RS.Controls.ControlsGenerator.registerBuilder('List', {
+    Name: 'List',
+    build: function (el) {
+        new RS.Controls.List(null, el);
     }
 });
