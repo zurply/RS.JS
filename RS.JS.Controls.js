@@ -22,7 +22,6 @@ RS.Controls.Control = function (options, container, isInherited) {
     this.PubSub = new RS.PubSub();
 
     this.initialize = function () {
-        console.log('control');
         self.initializeFromContainer();
         self.initializeHtml();
 
@@ -713,7 +712,6 @@ RS.Controls.Button = function (options, container, isInherited) {
     RS.Controls.Button.superclass.constructor.call(this, self.Options, container, true);
 
     this.initialize = override(self.initialize, function () {
-        console.log('button');
         self.PubSub.addEvent('click');
 
         return self;
@@ -892,7 +890,6 @@ RS.Controls.ToggleButton = function (options, container, isInherited) {
     RS.Controls.ToggleButton.superclass.constructor.call(this, self.Options, container, true);
 
     this.initialize = override(self.initialize, function () {
-        console.log('togglebutton');
         self.PubSub.addEvent('toggle');
         self.PubSub.addListener('click', function () {
             self.setChecked(!self.Options.IsChecked);
@@ -973,8 +970,6 @@ RS.Controls.ButtonGroup = function (options, container, isInherited) {
     RS.Controls.ButtonGroup.superclass.constructor.call(this, self.Options, container, true);
 
     this.initialize = override(self.initialize, function () {
-        console.log('buttongroup');
-
         if (self.Options.Buttons)
             for (var i = 0; i < self.Options.Buttons.length; i++)
                 self.addButton(self.Options.Buttons[i], true);
@@ -1176,10 +1171,6 @@ RS.Controls.ModalButton = function (options, container, isInherited) {
 
     RS.Controls.ModalButton.superclass.constructor.call(this, self.Options, container, true);
 
-    this.initialize = override(self.initialize, function () {
-        console.log('modalbutton');
-    });
-
     if (!isInherited)
         self.initialize();
 };
@@ -1213,7 +1204,6 @@ RS.Controls.Modal = function (options, container, isInherited) {
     this.Notifier = null;
 
     this.initialize = override(self.initialize, function () {
-        console.log('modal');
         self.PubSub.addEvent('show');
         self.PubSub.addEvent('hide');
         self.PubSub.addEvent('destroy');
@@ -1593,7 +1583,7 @@ RS.Controls.DataControl = function (options, container, isInherited) {
             Delay: 250,
             IsCaseSensitive: false
         },
-        HighlightFirst: true,
+        HighlightFirst: false,
         CanSelect: true,
         CanHighlight: true,
         RefreshAfterDataSourceChanged: true
@@ -1912,13 +1902,14 @@ RS.Controls.DataControl = function (options, container, isInherited) {
     };
 
     var renderItems = function (options, data) {
-        console.log('render');
         if (!self.Elements.Me)
             return self;
 
         if (options && options.IsRefresh) {
             clear();
-            self.Elements.List.scrollTop();
+
+            if (self.Elements.List)
+                self.Elements.List.scrollTop();
         }
 
         data = data || [];
@@ -1992,8 +1983,6 @@ RS.Controls.Dropdown = function (options, container, isInherited) {
     var openedAtLeastOnce = false;
 
     this.initialize = override(self.initialize, function () {
-        console.log('dropdown');
-
         self.PubSub.addEvent('open');
         self.PubSub.addEvent('close');
 
@@ -2168,12 +2157,6 @@ RS.Controls.ButtonDropdown = function (options, container, isInherited) {
 
     this.Button = null;
 
-    this.initialize = override(self.initialize, function () {
-        console.log('buttondropdown');
-
-        return self;
-    });
-
     this.initializeHtml = override(self.initializeHtml, function () {
         if (!self.Elements.Me)
             return self;
@@ -2212,12 +2195,6 @@ RS.Controls.SplitButton = function (options, container, isInherited) {
 
     this.Button = null;
     this.DropdownButton = null;
-
-    this.initialize = override(self.initialize, function () {
-        console.log('splitbutton');
-
-        return self;
-    });
 
     this.initializeHtml = override(self.initializeHtml, function () {
         if (!self.Elements.Me)
@@ -2265,7 +2242,6 @@ RS.Controls.List = function (options, container, isInherited) {
     this.Elements.Me = null;
 
     this.initialize = override(self.initialize, function () {
-        console.log('list');
 
         return self;
     });
@@ -2286,6 +2262,249 @@ RS.Controls.List = function (options, container, isInherited) {
     self.appendTo(container, true);
 };
 extend(RS.Controls.List, RS.Controls.DataControl);
+
+RS.Controls.TabItem = function (id, name, content) {
+    this.Id = id;
+    this.Name = name;
+    this.Content = content;
+};
+
+RS.Controls.Tab = function (options, container, isInherited) {
+    var self = this;
+
+    this.Options = {
+        Templates: [
+            {
+                IsDefault: true,
+                Id: 'tab-template'
+            }
+        ]
+    };
+
+    if (options)
+        self.Options = $.extend(self.Options, options);
+
+    RS.Controls.Tab.superclass.constructor.call(this, self.Options, container, true);
+
+    var lastSelectedTabPanel = null;
+
+    this.initializeFromContainer = override(self.initializeFromContainer, function () {
+        if (!self.Elements.Me)
+            return self;
+
+        var items = [];
+        var index = 0;
+        self.Elements.Me.find('[role="main"]:first > [role="tabpanel"]').each(function () {
+            var el = $(this);
+
+            var name = self.Elements.Me.find('[role="list"]:first > [role="tabpanel"]:eq(' + index + ') [role="tab"]').text();
+            var item = new RS.Controls.TabItem(el.attr('id'), name, el.html());
+            items.push(item);
+
+            index++;
+        });
+
+        self.Options.RefreshAfterDataSourceChanged = false;
+
+        self.setDataSource(new RS.Controls.DataSource({
+            Data: items
+        }));
+
+        return self;
+    });
+
+    this.selectIndex = override(self.selectIndex, function (index) {
+        if (!self.Elements.Me)
+            return self;
+
+        var selectedTabPanel = self.Elements.Me.find('> [role="main"] > [role="tabpanel"]:eq(' + self.SelectedIndex + ')');
+        if (selectedTabPanel.hasClass('active'))
+            return self;
+
+        self.Elements.TabList.find('> [role="listitem"]').removeClass('active');
+        self.Elements.TabList.find('> [role="listitem"]:eq(' + self.SelectedIndex + ')').addClass('active');
+
+        if (lastSelectedTabPanel)
+            lastSelectedTabPanel.removeClass('active').hide();
+
+        selectedTabPanel.addClass('active').show();
+
+        lastSelectedTabPanel = selectedTabPanel;
+
+        return self;
+    });
+
+    this.initializeHtml = override(self.initializeHtml, function () {
+        if (!self.Elements.Me)
+            return self;
+
+        self.Elements.TabList = self.Elements.Me.find('[role="list"]:first');
+
+        return self;
+    });
+
+    if (!isInherited)
+        self.initialize();
+};
+extend(RS.Controls.Tab, RS.Controls.DataControl);
+
+RS.Controls.Breadcrumb = function (options, container, isInherited) {
+    var self = this;
+
+    this.Options = {
+        Templates: [
+            {
+                IsDefault: true,
+                Id: 'breadcrumb-template',
+                ItemTemplateId: 'breadcrumb-item-template'
+            }
+        ]
+    };
+
+    if (options)
+        self.Options = $.extend(self.Options, options);
+
+    RS.Controls.Breadcrumb.superclass.constructor.call(this, self.Options, container, true);
+
+    this.initializeFromContainer = override(self.initializeFromContainer, function () {
+        if (!self.Elements.Me)
+            return self;
+
+        var items = [];
+        var index = 0;
+        self.Elements.Me.find('[role="listitem"]').each(function () {
+            var el = $(this);
+
+            items.push({
+                Text: el.text()
+            });
+
+            index++;
+        });
+
+        self.Options.RefreshAfterDataSourceChanged = false;
+
+        self.setDataSource(new RS.Controls.DataSource({
+            Data: items
+        }));
+
+        return self;
+    });
+
+    this.initializeHtml = override(self.initializeHtml, function () {
+        if (!self.Elements.Me)
+            return self;
+
+        return self;
+    });
+
+    if (!isInherited)
+        self.initialize();
+};
+extend(RS.Controls.Breadcrumb, RS.Controls.DataControl);
+
+RS.Controls.Panel = function (options, container, isInherited) {
+    var self = this;
+
+    this.Options = {
+        Templates: [
+            {
+                IsDefault: true,
+                Id: 'panel-template'
+            }
+        ],
+        HasHeader: true,
+        HasFooter: false,
+        Title: 'Panel'
+    };
+
+    if (options)
+        self.Options = $.extend(self.Options, options);
+
+    RS.Controls.Panel.superclass.constructor.call(this, self.Options, container, true);
+
+    this.initializeFromContainer = override(self.initializeFromContainer, function () {
+        if (!self.Elements.Me)
+            return self;
+
+        self.Options.Title = self.Elements.Me.find('> [role="panel-title"]:first').html();
+        self.Options.HasHeader = self.Elements.Me.find('> [role="panel-header"]:first').is(":visible");
+        self.Options.HasFooter = self.Elements.Me.find('> [role="panel-footer"]:first').is(":visible");
+
+        return self;
+    });
+
+    this.setTitle = function (title) {
+        self.Options.Title = title;
+
+        if (self.Elements.Title)
+            self.Elements.Title.html(title);
+
+        return self;
+    };
+
+    this.showHeader = function () {
+        self.Options.HasHeader = true;
+
+        if (self.Elements.Header)
+            self.Elements.Header.show();
+
+        return self;
+    };
+
+    this.hideHeader = function () {
+        self.Options.HasHeader = false;
+
+        if (self.Elements.Header)
+            self.Elements.Header.hide();
+
+        return self;
+    };
+
+    this.showFooter = function () {
+        self.Options.HasFooter = true;
+
+        if (self.Elements.Footer)
+            self.Elements.Footer.show();
+
+        return self;
+    };
+
+    this.hideFooter = function () {
+        self.Options.HasFooter = false;
+
+        if (self.Elements.Footer)
+            self.Elements.Footer.hide();
+
+        return self;
+    };
+
+    this.initializeHtml = override(self.initializeHtml, function () {
+        if (!self.Elements.Me)
+            return self;
+
+        self.Elements.Header = self.Elements.Me.find('> [role="panel-header"]:first');
+        self.Elements.Title = self.Elements.Me.find('[role="panel-title"]:first');
+        self.Elements.Body = self.Elements.Me.find('> [role="panel-body"]:first');
+        self.Elements.Footer = self.Elements.Me.find('> [role="panel-footer"]:first');
+
+        self.setTitle(self.Options.Title);
+
+        if (self.Options.HasHeader)
+            self.showHeader();
+        else self.hideHeader();
+
+        if (self.Options.HasFooter)
+            self.showFooter();
+        else self.hideFooter();
+
+        return self;
+    });
+
+    if (!isInherited)
+        self.initialize();
+};
+extend(RS.Controls.Panel, RS.Controls.Control);
 
 RS.Controls.ControlsGenerator = (function () {
     var self = this;

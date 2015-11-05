@@ -129,12 +129,51 @@
 </script>
 
 <script id="list-template" type="text/x-handlebars-template">
-    <ul class="list-group" role="list">
-    </ul>
+    <ul class="list-group" role="list"></ul>
 </script>
 
 <script id="list-item-template" type="text/x-handlebars-template">
     {{#each Items}}
     <li class="list-group-item" role="listitem">{{Text}}</li>
     {{/each}}
+</script>
+
+<script id="tab-template" type="text/x-handlebars-template">
+    <div role="tabpanel">
+        {{#if Control.Options.DataSource.Options.Data}}
+        <ul class="nav nav-tabs" role="list">
+            {{#each Control.Options.DataSource.Options.Data}}
+            <li role="listitem"><a href="#{{Id}}" role="tab">{{Name}}</a></li>
+            {{/each}}
+        </ul>
+
+        <div class="tab-content" role="main">
+            {{#each Control.Options.DataSource.Options.Data}}
+            <div role="tabpanel" class="tab-panel" id="{{Id}}">{{Content}}</div>
+            {{/each}}
+        </div>
+        {{/if}}
+    </div>
+</script>
+
+<script id="breadcrumb-template" type="text/x-handlebars-template">
+    <ol class="breadcrumb" role="list"></ol>
+</script>
+
+<script id="breadcrumb-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <li data-id="{{Id}}" role="listitem"><a href="#">{{Text}}</a></li>
+    {{/each}}
+</script>
+
+<script id="panel-template" type="text/x-handlebars-template">
+    <div class="panel panel-default" role="panel">
+        <div class="panel-heading" role="panel-header">
+            <h3 class="panel-title" role="panel-title"></h3>
+        </div>
+        <div class="panel-body" role="panel-body">
+        </div>
+        <div class="panel-footer" role="panel-footer">
+        </div>
+    </div>
 </script>
