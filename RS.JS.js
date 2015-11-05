@@ -12,11 +12,56 @@ var RS = function () {
             }
         });
 
+        $(document).ready(function (e) {
+            RS.Controls.ControlsGenerator.generateControlsInContainer();
+            RS.Controls.ControlsGenerator.listenForControls();
+
+            self.ready();
+        });
+
         return self;
     };
+
+    this.ready = function () { };
 };
 
 RS = new RS().initialize();
+
+
+RS.Core = RS.Core || {};
+
+RS.Core.copy = function (o, deep) {
+    return deep ? jQuery.extend(true, {}, o) : jQuery.extend({}, o);
+};
+
+function extend(subClass, superClass) {
+    var f = function () { };
+    f.prototype = superClass.prototype;
+    subClass.prototype = new f();
+    subClass.prototype.constructor = subClass;
+
+    subClass.superclass = superClass.prototype;
+    if (superClass.prototype.constructor == Object.prototype.constructor)
+        superClass.prototype.constructor = superClass;
+};
+
+var override = function (f, newCode) {
+    if (!f)
+        return null;
+
+    if (!newCode)
+        return f;
+
+    var proxied = f;
+
+    f = function () {
+        proxied.apply(this, arguments);
+
+        return newCode.apply(this, arguments);
+    };
+
+    return f;
+};
 
 RS.Constants = {
     Errors: {
@@ -150,10 +195,21 @@ Array.prototype.findFirstIndex = function (validateFunction) {
     return -1;
 };
 
+Array.prototype.filter = function (validateFunction) {
+    return $.grep(this, validateFunction);
+};
+
 Array.prototype.findFirst = function (validateFunction) {
     var index = this.findFirstIndex(validateFunction);
 
     return index >= 0 ? this[index] : null;
+};
+
+Array.prototype.findFirstKeyValue = function (key, value) {
+    if (!key)
+        return null;
+
+    return this.findFirst(function (item, index) { return item && item[key] == value; });
 };
 
 var dateFormat = function () {
@@ -285,8 +341,16 @@ RS.Alerter = (function (selector, templateId) {
     this.Options = {
         AutoHide: true,
         AutoHideAfter: 5000,
+        HideOnClick: true,
         Selector: selector || ".primary-alert",
-        TemplateId: templateId || 'alert-template'
+        TemplateId: templateId || 'alert-template',
+        Position: {
+            Pinned: false,
+            Top: null,
+            Right: null,
+            Bottom: null,
+            Left: null
+        }
     };
 
     var defaultContainer = $("body");
@@ -296,26 +360,52 @@ RS.Alerter = (function (selector, templateId) {
         alert: null
     };
 
-    var getAlert = function (createIfNotExists, container) {
+    var getAlert = function (createIfNotExists, container, givenOptions) {
         container = container || defaultContainer;
 
-        var alert = container.find(self.Options.Selector);
+        var options = RS.Core.copy(self.Options);
+        if (givenOptions)
+            options = $.extend(options, givenOptions);
+
+        var alert = container.find(options.Selector);
         if (!alert.length && createIfNotExists) {
             if (!templates.alert)
-                templates.alert = Handlebars.compile($("#" + self.Options.TemplateId).html());
+                templates.alert = Handlebars.compile($("#" + options.TemplateId).html());
 
             alert = $(templates.alert({}));
             container.append(alert);
 
-            if (self.Options.AutoHide && self.Options.AutoHideAfter)
-                hideTimeoutId = setTimeout(function () { hide(container); }, self.Options.AutoHideAfter)
+            if (options.Position.Pinned) {
+                alert.css({
+                    'position': 'fixed',
+                    'top': options.Position.Top,
+                    'right': options.Position.Right,
+                    'bottom': options.Position.Bottom,
+                    'left': options.Position.Left
+                });
+            }
+
+            if (options.AutoHide && options.AutoHideAfter) {
+                if (hideTimeoutId)
+                    clearTimeout(hideTimeoutId);
+
+                hideTimeoutId = setTimeout(function () { hide(container); }, options.AutoHideAfter)
+            }
+
+            var control = alert.data('Control');
+            if (!control) {
+                control = {};
+                alert.data('Control', control);
+                if (options.HideOnClick)
+                    alert.bind('mousedown', function () { hide(container); return false; });
+            }
         }
 
         return alert;
     };
 
-    var show = function (alertType, title, message, container) {
-        alert = getAlert(true, container);
+    var show = function (alertType, title, message, container, options) {
+        alert = getAlert(true, container, options);
 
         alertType = alertType || AlertTypes.Info;
         title = title || "";
@@ -333,10 +423,13 @@ RS.Alerter = (function (selector, templateId) {
         alert.find("strong").html(title);
         alert.find("span.message").html(message);
 
-        alert.show();
+        return alert.show();
     };
 
     var hide = function (container) {
+        if (hideTimeoutId)
+            clearTimeout(hideTimeoutId);
+
         getAlert(false, container).hide();
     };
 
@@ -349,20 +442,20 @@ RS.Alerter = (function (selector, templateId) {
     };
 
     return {
-        showInfo: function (message, title, container) {
-            show(RS.Alerter.AlertTypes.Info, title, message, container);
+        showInfo: function (message, title, container, options) {
+            return show(RS.Alerter.AlertTypes.Info, title, message, container, options);
         },
-        showWarning: function (message, title, container) {
-            show(RS.Alerter.AlertTypes.Warning, title, message, container);
+        showWarning: function (message, title, container, options) {
+            return show(RS.Alerter.AlertTypes.Warning, title, message, container, options);
         },
-        showSuccess: function (message, title, container) {
-            show(RS.Alerter.AlertTypes.Success, title, message, container);
+        showSuccess: function (message, title, container, options) {
+            return show(RS.Alerter.AlertTypes.Success, title, message, container, options);
         },
-        showDanger: function (message, title, container) {
-            show(RS.Alerter.AlertTypes.Danger, title, message, container);
+        showDanger: function (message, title, container, options) {
+            return show(RS.Alerter.AlertTypes.Danger, title, message, container, options);
         },
-        show: function (alertType, message, title, container) {
-            show(alertType, title, message, container);
+        show: function (alertType, message, title, container, options) {
+            return show(alertType, title, message, container, options);
         },
         hide: function (container) {
             hide(container);
@@ -407,33 +500,6 @@ RS.Cache = (function () {
     };
 })();
 
-function extend(subClass, superClass) {
-    var f = function () { };
-    f.prototype = superClass.prototype;
-    subClass.prototype = new f();
-    subClass.prototype.constructor = subClass;
-
-    subClass.superclass = superClass.prototype;
-    if (superClass.prototype.constructor == Object.prototype.constructor) {
-        superClass.prototype.constructor = superClass;
-    }
-};
-
-var override = function (f, newCode) {
-    if (!f)
-        return null;
-
-    if (!newCode)
-        return f;
-    var proxied = f;
-
-    f = function () {
-        proxied.apply(this, arguments);
-        return newCode.apply(this, arguments);
-    };
-    return f;
-};
-
 RS.Event = {
     getEvent: function (e) {
         return e || window.event;
@@ -469,8 +535,16 @@ RS.Event = {
     }
 };
 
-RS.Logger = (function () {
+RS.LogTypes = {
+    Info: 'Info',
+    Success: 'Success',
+    Warning: 'Warning',
+    Error: 'Error'
+};
+
+RS.Logger = function () {
     var self = this;
+
     var defaults = {
         BackgroundColor: '#fff',
         TextColor: '#333',
@@ -480,6 +554,8 @@ RS.Logger = (function () {
         },
         IsOn: false
     };
+
+    this.Options = defaults;
 
     var log = function (logType, message, details, category) {
         if (!defaults.IsOn)
@@ -494,26 +570,26 @@ RS.Logger = (function () {
         writeToConsole(message);
         if (details)
             writeToConsole(details);
-	};
+    };
 
     var writeToConsole = function (message, backgroundColor, textColor) {
-	    backgroundColor = backgroundColor || defaults.BackgroundColor;
-	    textColor = textColor || defaults.TextColor;
+        backgroundColor = backgroundColor || defaults.BackgroundColor;
+        textColor = textColor || defaults.TextColor;
 
-	    if (typeof message == "object") {
-	        console.log(message);
-	    } else {
-	        console.log("%c" + message, "color:" + textColor + ";font-weight:bold; background-color: " + backgroundColor + ";");
-	    }
-	};
+        if (typeof message == "object") {
+            console.log(message);
+        } else {
+            console.log("%c" + message, "color:" + textColor + ";font-weight:bold; background-color: " + backgroundColor + ";");
+        }
+    };
 
-	return {
-	    logInfo: function (message, details, category) { log(LogTypes.Info, message, details, category); },
-	    logSucces: function (message, details, category) { log(LogTypes.Success, message, details, category); },
-	    logWarning: function (message, details, category) { log(LogTypes.Warning, message, details, category); },
-	    logError: function (message, details, category) { log(LogTypes.Error, message, details, category); }
-	};
-})();
+    this.logInfo = function (message, details, category) { log(RS.LogTypes.Info, message, details, category); }
+    this.logSucces = function (message, details, category) { log(RS.LogTypes.Success, message, details, category); }
+    this.logWarning = function (message, details, category) { log(RS.LogTypes.Warning, message, details, category); }
+    this.logError = function (message, details, category) { log(RS.LogTypes.Error, message, details, category); }
+};
+
+RS.Logger = new RS.Logger();
 
 RS.Utils = {
     interceptForm: function(form, beforeSubmitCallback, successCallback) {
@@ -589,6 +665,28 @@ RS.Utils = {
             height = document.body.clientHeight;
 
         return height;
+    },
+    isInsideElement: function (pos, el) {
+        if (!pos || !el)
+            return false;
+
+        var offset = el.offset();
+        if (!offset)
+            return false;
+
+        var isInside = pos.x >= offset.left && pos.x <= offset.left + el.outerWidth() && pos.y >= offset.top && pos.y <= offset.top + el.outerHeight();
+
+        return isInside;
+    },
+    getOptionsFromAttributes: function (el, name) {
+        if (!el || !name)
+            return null;
+
+        var optionsFromAttributes = el.attr(name);
+        if (optionsFromAttributes)
+            return JSON.parse(optionsFromAttributes);
+
+        return null;
     }
 };
 
