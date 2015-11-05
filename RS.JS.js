@@ -13,8 +13,10 @@ var RS = function () {
         });
 
         $(document).ready(function (e) {
-            RS.Controls.ControlsGenerator.generateControlsInContainer();
-            RS.Controls.ControlsGenerator.listenForControls();
+            if (RS.Controls) {
+                RS.Controls.ControlsGenerator.generateControlsInContainer();
+                RS.Controls.ControlsGenerator.listenForControls();
+            }
 
             self.ready();
         });
@@ -408,7 +410,7 @@ String.prototype.parseDate = function () {
     return new Date(this);
 };
 
-String.removeNonAlphaNumeric = String.prototype.removeNonAlphaNumeric = function (removeSpaces) {
+String.prototype.removeNonAlphaNumeric = function (removeSpaces) {
     var i = 0;
     var string = (typeof (this) == "function" && !(i++)) ? arguments[0] : this;
 
@@ -418,6 +420,18 @@ String.removeNonAlphaNumeric = String.prototype.removeNonAlphaNumeric = function
 
     return string;
 };
+
+String.prototype.replaceAll = function (find, replace) {
+    return this.replace(new RegExp(find, 'g'), replace);
+};
+
+(function (jQuery) {
+    jQuery.fn.extend({
+        getControl: function () {
+            return this.data('control');
+        }
+    });
+})(jQuery);
 
 RS.Alerter = (function (selector, templateId) {
     var self = this;

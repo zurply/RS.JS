@@ -92,8 +92,12 @@ RS.Controls.Control = function (options, container, isInherited) {
                 children[i].appendTo(childrenContainer);
         }
 
-        if (replace)
+        if (replace) {
+            var existingId = parent.attr('id');
             parent.replaceWith(self.Elements.Me);
+            if (existingId)
+                self.Elements.Me.attr('id', existingId);
+        }
         else parent.append(self.Elements.Me);
 
         return self.initializeHtml();
