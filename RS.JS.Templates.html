@@ -1,6 +1,140 @@
-<script id="alert-template" type="text/x-handlebars-template">
-	<div class="primary-alert alert alert-warning alert-dismissible" role="alert">
-		<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-		<strong></strong><span class="message"></span>
-	</div>
+<script id="container-template" type="text/x-handlebars-template">
+    <div role="main"></div>
+</script>
+
+<script id="button-default-template" type="text/x-handlebars-template">
+    <a class="btn btn-default" role="button">
+        <span role="img"></span>
+        <span role="main"></span>
+    </a>
+</script>
+
+<script id="button-group-template" type="text/x-handlebars-template">
+    <div class="btn-group" role="group">
+    </div>
+</script>
+
+<script id="modal-template" type="text/x-handlebars-template">
+    <div class="modal">
+        <div class="modal-dialog" role="dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" role="title">{{Control.Options.Title}}</h4>
+                </div>
+                <div class="modal-body" role="main">
+                    {{Control.Options.Content}}
+                </div>
+                <div class="modal-alert-container" role="alert">
+                </div>
+                <div class="modal-footer" role="footer">
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="notification-template" type="text/x-handlebars-template">
+    <div class="alert {{Control.Options.Type}}">
+        <button type="button" class="close" role="close"><span>&times;</span><span class="sr-only">Close</span></button>
+        <strong role="title">{{Control.Options.Title}}</strong><span role="message">{{Control.Options.Message}}</span>
+    </div>
+</script>
+
+<script id="tooltip-template" type="text/x-handlebars-template">
+    <div class="tooltip {{Control.Options.Position}}" role="tooltip">
+        <div class="tooltip-arrow"></div>
+        <div class="tooltip-inner" role="main">
+            {{Control.Options.Content}}
+        </div>
+    </div>
+</script>
+
+<script id="popover-template" type="text/x-handlebars-template">
+    <div class="popover {{Control.Options.Position}}" role="tooltip">
+        <div class="arrow"></div>
+        <h3 class="popover-title" role="title">{{Control.Options.Title}}</h3>
+        <div class="popover-content" role="main">
+            {{Control.Options.Content}}
+        </div>
+    </div>
+</script>
+
+<script id="dropdown-template" type="text/x-handlebars-template">
+    <div class="dropdown" role="dropdown">
+        <button class="btn btn-default" role="dropdown-toggle">
+            <span role="main">
+                {{#if Control.SelectedItem}}
+                {{>DropdownSelectedItemTemplate Control.SelectedItem}}
+                {{else}}
+                {{Control.Options.SelectText}}
+                {{/if}}
+            </span>
+            <span class="caret"></span>
+        </button>
+        <div role="popover">
+            <input type="search" class="form-control" />
+            <ul class="dropdown-menu" role="list"></ul>
+        </div>
+    </div>
+</script>
+
+<script id="dropdown-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <li role="listitem" tabindex="-1"><a href="#" role="main" tabindex="-1">{{Text}}</a></li>
+    {{/each}}
+</script>
+
+<script id="dropdown-selected-item-template" type="text/x-handlebars-template">
+    {{Text}}
+</script>
+
+<script id="button-dropdown-template" type="text/x-handlebars-template">
+    <div class="btn-group" role="dropdown">
+        <a class="btn btn-default dropdown-toggle" role="dropdown-toggle">
+            <span role="img"></span>
+            <span role="main"></span>
+            <span class="caret"></span>
+        </a>
+        <div role="popover">
+            <ul class="dropdown-menu" role="list"></ul>
+        </div>
+    </div>
+</script>
+
+<script id="button-dropdown-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <li role="listitem" tabindex="-1"><a href="#" role="main" tabindex="-1">{{Text}}</a></li>
+    {{/each}}
+</script>
+
+<script id="splitbutton-template" type="text/x-handlebars-template">
+    <div class="btn-group" role="dropdown">
+        <a class="btn btn-default" role="button">
+            <span role="img"></span>
+            <span role="main"></span>
+        </a>
+        <a class="btn btn-default dropdown-toggle" role="dropdown-toggle">
+            <span class="caret"></span>
+        </a>
+        <div role="popover">
+            <ul class="dropdown-menu" role="list"></ul>
+        </div>
+    </div>
+</script>
+
+<script id="splitbutton-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <li role="listitem" tabindex="-1"><a href="#" role="main" tabindex="-1">{{Text}}</a></li>
+    {{/each}}
+</script>
+
+<script id="list-template" type="text/x-handlebars-template">
+    <ul class="list-group" role="list">
+    </ul>
+</script>
+
+<script id="list-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <li class="list-group-item" role="listitem">{{Text}}</li>
+    {{/each}}
 </script>
