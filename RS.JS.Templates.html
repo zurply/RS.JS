@@ -22,7 +22,7 @@
                     <h4 class="modal-title" role="title">{{Control.Options.Title}}</h4>
                 </div>
                 <div class="modal-body" role="main">
-                    {{Control.Options.Content}}
+                    {{{Control.Options.Content}}}
                 </div>
                 <div class="modal-alert-container" role="alert">
                 </div>
@@ -72,7 +72,7 @@
             <span class="caret"></span>
         </button>
         <div role="popover">
-            <input type="search" class="form-control" />
+            <input type="search" class="form-control" role="search" />
             <ul class="dropdown-menu" role="list"></ul>
         </div>
     </div>
@@ -80,7 +80,7 @@
 
 <script id="dropdown-item-template" type="text/x-handlebars-template">
     {{#each Items}}
-    <li role="listitem" tabindex="-1"><a href="#" role="main" tabindex="-1">{{Text}}</a></li>
+    <li role="listitem" tabindex="-1" class="{{#if IsSelected}}selected{{/if}}"><a href="#" role="main" tabindex="-1">{{#showProperty ../Control this}}{{/showProperty}}</a></li>
     {{/each}}
 </script>
 
@@ -134,7 +134,7 @@
 
 <script id="list-item-template" type="text/x-handlebars-template">
     {{#each Items}}
-    <li class="list-group-item" role="listitem">{{Text}}</li>
+    <li class="list-group-item" role="listitem">{{#showProperty ../Control this}}{{/showProperty}}</li>
     {{/each}}
 </script>
 
@@ -176,4 +176,238 @@
         <div class="panel-footer" role="panel-footer">
         </div>
     </div>
+</script>
+
+<script id="progressbar-template" type="text/x-handlebars-template">
+    <div class="progress" role="progressbar">
+        <div class="progress-bar" role="main">
+
+        </div>
+    </div>
+</script>
+
+<script id="pager-template" type="text/x-handlebars-template">
+    <nav role="pager">
+        <ul class="pagination" role="list">
+            <li class="previous" role="previous"><a href="#"><span>«</span></a></li>
+            <li class="next" role="next"><a href="#"><span>»</span></a></li>
+        </ul>
+    </nav>
+</script>
+
+<script id="pager-item-template" type="text/x-handlebars-template">
+    <li role="listitem" data-index="{{Index}}"><a href="#">{{Number}}</a></li>
+</script>
+
+<script id="menu-template" type="text/x-handlebars-template">
+    <ul class="dropdown-menu list-group" role="menu">
+        {{#each Items}}
+        {{>MenuItemTemplate this}}
+        {{/each}}
+    </ul>
+</script>
+
+<script id="menu-item-template" type="text/x-handlebars-template">
+    <li data-id="{{Id}}" class="{{#if Items}}dropdown-submenu{{/if}} list-group-item" role="listitem">
+        <a tabindex="-1" href="#" role="main">{{Name}}</a>
+        {{#if Items}}
+        <ul class="dropdown-menu list-group" role="list">
+            {{#each Items}}
+            {{>MenuItemTemplate this}}
+            {{/each}}
+        </ul>
+        {{/if}}
+    </li>
+</script>
+
+<script id="autocomplete-template" type="text/x-handlebars-template">
+    <div class="input-group autocomplete" role="dropdown">
+        <span class="input-group-btn" role="summary-container">
+            <span class="btn btn-default" tabindex="-1" role="summary">
+            </span>
+        </span>
+        <input type="search" class="form-control" role="search" />
+        <div role="popover">
+            <ul class="dropdown-menu" role="list"></ul>
+        </div>
+    </div>
+</script>
+
+<script id="autocomplete-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <li role="listitem" tabindex="-1" class="{{#if IsSelected}}selected{{/if}}"><a href="#" role="main" tabindex="-1">{{Text}}</a></li>
+    {{/each}}
+</script>
+
+<script id="combobox-template" type="text/x-handlebars-template">
+    <div class="input-group combobox" role="dropdown">
+        <span class="input-group-btn" role="summary-container">
+            <span class="btn btn-default" tabindex="-1" role="summary">
+                ceva
+            </span>
+        </span>
+        <input type="search" class="form-control" role="search" />
+        <span class="input-group-btn">
+            <a class="btn btn-default dropdown-toggle" tabindex="-1" role="dropdown-toggle">
+                <span class="caret"></span>
+            </a>
+        </span>
+        <div role="popover">
+            <ul class="dropdown-menu" role="list"></ul>
+        </div>
+    </div>
+</script>
+
+<script id="combobox-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <li role="listitem" tabindex="-1" class="{{#if IsSelected}}selected{{/if}}"><a href="#" role="main" tabindex="-1">{{Text}}</a></li>
+    {{/each}}
+</script>
+
+<script id="treeview-template" type="text/x-handlebars-template">
+    <ul class="treeview list-group" role="list"></ul>
+</script>
+
+<script id="treeview-item-template" type="text/x-handlebars-template">
+    {{#each Nodes}}
+    <li data-id="{{Id}}" class="list-group-item {{#if IsSelected}}active{{/if}}" role="listitem">
+        {{#if Nodes}}
+        {{#if IsExpanded}}
+        <span class="glyphicon glyphicon-minus collapse-node"></span>
+        {{else}}
+        <span class="glyphicon glyphicon-plus expand-node"></span>
+        {{/if}}
+        {{/if}}
+        <span>{{Name}}</span>
+        {{#if Nodes}}
+        <ul class="treeview list-group" style="{{#unless IsExpanded}}display: none;{{/unless}}" role="list">
+            {{> TreeViewNodeChildrenTemplate}}
+        </ul>
+        {{/if}}
+    </li>
+    {{/each}}
+</script>
+
+<script id="grid-template" type="text/x-handlebars-template">
+    <div role="grid" tabindex="1">
+        {{#if Control.Options.Columns}}
+        <div role="header">
+            <table class="table grid-header-table">
+                <thead>
+                    <tr>
+                        {{#each Control.Options.Columns}}
+                        <th>{{Name}}</th>
+                        {{/each}}
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        {{/if}}
+
+        <div role="body">
+            <table class="table table-hover grid-body-table">
+                <colgroup>
+                    {{#each Control.Options.Columns}}
+                    <col {{#if Width}} style="width: {{Width}}" {{/if}} />
+                    {{/each}}
+                </colgroup>
+                <tbody role="list">
+                    {{> GridItemTemplate}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</script>
+
+<script id="grid-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <tr role="listitem">
+        {{#each ../Control.Options.Columns}}
+        <td>{{#getColumnValue ../this this}}{{/getColumnValue}}</td>
+        {{/each}}
+    </tr>
+    {{/each}}
+</script>
+
+<script id="datetimepicker-template" type="text/x-handlebars-template">
+    <div class='input-group date' role="datetimepicker">
+        <input type='text' class="form-control" />
+        <span class="input-group-addon">
+            <span class="glyphicon glyphicon-calendar"></span>
+        </span>
+    </div>
+</script>
+
+<script id="datagrid-template" type="text/x-handlebars-template">
+    <div role="grid" tabindex="1">
+        <div role="header">
+            {{#if Control.Options.Columns}}
+            {{> DataGridHeaderTemplate}}
+            {{/if}}
+        </div>
+
+        <div role="body">
+            <table class="table table-hover grid-body-table">
+                <colgroup>
+                    {{#each Control.Options.Columns}}
+                    <col {{#if Width}} style="width: {{Width}}" {{/if}} />
+                    {{/each}}
+                </colgroup>
+                <tbody role="list">
+                    {{> DataGridItemTemplate}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</script>
+
+<script id="datagrid-header-template" type="text/x-handlebars-template">
+    <table class="table grid-header-table">
+        <thead>
+            <tr>
+                {{#each Control.Options.Columns}}
+                <th>{{Name}}</th>
+                {{/each}}
+            </tr>
+        </thead>
+    </table>
+</script>
+
+<script id="datagrid-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <tr role="listitem">
+        {{#each ../Control.Options.Columns}}
+        <td>{{#getCellValue ../this this}}{{/getCellValue}}</td>
+        {{/each}}
+    </tr>
+    {{/each}}
+</script>
+
+<script id="datadropdown-template" type="text/x-handlebars-template">
+    <div class="dropdown" role="dropdown">
+        <button class="btn btn-default" role="dropdown-toggle">
+            <span role="main">
+                {{#if Control.SelectedItem}}
+                {{>DataDropdownSelectedItemTemplate Control.SelectedItem}}
+                {{else}}
+                {{Control.Options.SelectText}}
+                {{/if}}
+            </span>
+            <span class="caret"></span>
+        </button>
+        <div role="popover">
+            <input type="search" class="form-control" role="search" />
+            <ul class="dropdown-menu" role="list"></ul>
+        </div>
+    </div>
+</script>
+
+<script id="datadropdown-item-template" type="text/x-handlebars-template">
+    {{#each Items}}
+    <li role="listitem" tabindex="-1" class="{{#if IsSelected}}selected{{/if}}"><a href="#" role="main" tabindex="-1">{{#getDataSetColumnValue ../Control this}}{{/getDataSetColumnValue}}</a></li>
+    {{/each}}
+</script>
+
+<script id="datadropdown-selected-item-template" type="text/x-handlebars-template">
+    {{#getDataSetColumnValue Control Row}}{{/getDataSetColumnValue}}
 </script>

@@ -2,16 +2,6 @@ var RS = function () {
     var self = this;
 
     this.initialize = function () {
-        $(document).keydown(function (e) {
-            if (e.keyCode == RS.Keys.ESCAPE) {
-                if (RS.Alerter.isVisible()) {
-                    RS.Alerter.hide();
-
-                    return false;
-                }
-            }
-        });
-
         $(document).ready(function (e) {
             if (RS.Controls) {
                 RS.Controls.ControlsGenerator.generateControlsInContainer();
@@ -28,7 +18,6 @@ var RS = function () {
 };
 
 RS = new RS().initialize();
-
 
 RS.Core = RS.Core || {};
 
@@ -281,10 +270,6 @@ Array.prototype.findFirstIndex = function (validateFunction) {
     return -1;
 };
 
-Array.prototype.filter = function (validateFunction) {
-    return $.grep(this, validateFunction);
-};
-
 Array.prototype.findFirst = function (validateFunction) {
     var index = this.findFirstIndex(validateFunction);
 
@@ -296,6 +281,13 @@ Array.prototype.findFirstKeyValue = function (key, value) {
         return null;
 
     return this.findFirst(function (item, index) { return item && item[key] == value; });
+};
+
+Array.prototype.findFirstKeyIndex = function (key, value) {
+    if (!key)
+        return null;
+
+    return this.findFirstIndex(function (item, index) { return item && item[key] == value; });
 };
 
 var dateFormat = function () {
@@ -425,157 +417,55 @@ String.prototype.replaceAll = function (find, replace) {
     return this.replace(new RegExp(find, 'g'), replace);
 };
 
+String.prototype.startsWith = function (str) {
+    return this.slice(0, str.length) == str;
+};
+
+String.prototype.endsWith = function (str) {
+    return this.slice(-str.length) == str;
+};
+
+
 (function (jQuery) {
     jQuery.fn.extend({
         getControl: function () {
             return this.data('control');
+        },
+        enable: function () {
+            return this.prop('disabled', false);
+        },
+        disable: function () {
+            return this.prop('disabled', true);
+        },
+        check: function () {
+            return this.prop('checked', true);
+        },
+        uncheck: function () {
+            return this.prop('checked', false);
+        },
+        attrs: function (startsWith) {
+            var t = $(this);
+            var a = [],
+                r = t.get(0);
+            if (r) {
+                r = r.attributes;
+                for (var i in r) {
+                    var p = r[i];
+                    if (typeof p.nodeValue !== 'undefined') {
+                        if (startsWith && p.nodeName.indexOf(startsWith) == -1)
+                            continue;
+
+                        a.push({
+                            Name: p.nodeName,
+                            Value: p.nodeValue
+                        });
+                    }
+                }
+            }
+            return a;
         }
     });
 })(jQuery);
-
-RS.Alerter = (function (selector, templateId) {
-    var self = this;
-
-    this.Options = {
-        AutoHide: true,
-        AutoHideAfter: 5000,
-        HideOnClick: true,
-        Selector: selector || ".primary-alert",
-        TemplateId: templateId || 'alert-template',
-        Position: {
-            Pinned: false,
-            Top: null,
-            Right: null,
-            Bottom: null,
-            Left: null
-        }
-    };
-
-    var defaultContainer = $("body");
-    var hideTimeoutId = null;
-
-    var templates = {
-        alert: null
-    };
-
-    var getAlert = function (createIfNotExists, container, givenOptions) {
-        container = container || defaultContainer;
-
-        var options = RS.Core.copy(self.Options);
-        if (givenOptions)
-            options = $.extend(options, givenOptions);
-
-        var alert = container.find(options.Selector);
-        if (!alert.length && createIfNotExists) {
-            if (!templates.alert)
-                templates.alert = Handlebars.compile($("#" + options.TemplateId).html());
-
-            alert = $(templates.alert({}));
-            container.append(alert);
-
-            if (options.Position.Pinned) {
-                alert.css({
-                    'position': 'fixed',
-                    'top': options.Position.Top,
-                    'right': options.Position.Right,
-                    'bottom': options.Position.Bottom,
-                    'left': options.Position.Left
-                });
-            }
-
-            if (options.AutoHide && options.AutoHideAfter) {
-                if (hideTimeoutId)
-                    clearTimeout(hideTimeoutId);
-
-                hideTimeoutId = setTimeout(function () { hide(container); }, options.AutoHideAfter)
-            }
-
-            var control = alert.data('Control');
-            if (!control) {
-                control = {};
-                alert.data('Control', control);
-                if (options.HideOnClick)
-                    alert.bind('mousedown', function () { hide(container); return false; });
-            }
-        }
-
-        return alert;
-    };
-
-    var show = function (alertType, title, message, container, options) {
-        alert = getAlert(true, container, options);
-
-        alertType = alertType || AlertTypes.Info;
-        title = title || "";
-        message = message || "";
-
-        alert.removeClass('alert-success alert-info alert-warning alert-danger');
-        alertType = alertType.toLowerCase();
-        alert.addClass('alert-' + alertType);
-
-        if (alertType === 'warning') {
-            alert.css('background-color', RS.Constants.Alerts.Warning.BackgroundColor);
-            alert.css('color', RS.Constants.Alerts.Warning.Color);
-        }
-
-        alert.find("strong").html(title);
-        alert.find("span.message").html(message);
-
-        return alert.show();
-    };
-
-    var hide = function (container) {
-        if (hideTimeoutId)
-            clearTimeout(hideTimeoutId);
-
-        getAlert(false, container).hide();
-    };
-
-    var isVisible = function (container) {
-        return getAlert(false, container).is(":visible");
-    };
-
-    var setDefaultContainer = function (container) {
-        defaultContainer = container;
-    };
-
-    return {
-        showInfo: function (message, title, container, options) {
-            return show(RS.Alerter.AlertTypes.Info, title, message, container, options);
-        },
-        showWarning: function (message, title, container, options) {
-            return show(RS.Alerter.AlertTypes.Warning, title, message, container, options);
-        },
-        showSuccess: function (message, title, container, options) {
-            return show(RS.Alerter.AlertTypes.Success, title, message, container, options);
-        },
-        showDanger: function (message, title, container, options) {
-            return show(RS.Alerter.AlertTypes.Danger, title, message, container, options);
-        },
-        show: function (alertType, message, title, container, options) {
-            return show(alertType, title, message, container, options);
-        },
-        hide: function (container) {
-            hide(container);
-        },
-        isVisible: function (container) {
-            return isVisible(container);
-        },
-        setDefaultContainer: function (container) {
-            setDefaultContainer(container);
-        },
-        getOptions: function () {
-            return self.Options;
-        }
-    };
-})();
-
-RS.Alerter.AlertTypes = {
-    Success: 'Success',
-    Info: 'Info',
-    Warning: 'Warning',
-    Danger: 'Danger',
-};
 
 RS.Cache = (function () {
     var getValue = function (key, defaultValue) {
@@ -690,11 +580,11 @@ RS.Logger = function () {
 RS.Logger = new RS.Logger();
 
 RS.Utils = {
-    interceptForm: function(form, beforeSubmitCallback, successCallback) {
+    interceptForm: function (form, beforeSubmitCallback, successCallback) {
         form = form || $("form:first");
 
         form.ajaxForm({
-            beforeSubmit: function(arr, $form, options) {
+            beforeSubmit: function (arr, $form, options) {
                 if (beforeSubmitCallback)
                     if (!beforeSubmitCallback())
                         return false;
@@ -702,18 +592,18 @@ RS.Utils = {
                 if (!$form.valid())
                     return false;
             },
-            success: function(response) {
+            success: function (response) {
                 if (successCallback)
                     successCallback(response);
             }
         });
     },
-    clearFormValidation: function(form) {
+    clearFormValidation: function (form) {
         form = form || $("form:first");
 
         form.find('.validation-summary-errors ul').empty();
     },
-    getQueryString: function(ji) {
+    getQueryString: function (ji) {
         var hu = window.location.search.substring(1);
         var gy = hu.split("&");
         for (var i = 0; i < gy.length; i++) {
@@ -722,7 +612,7 @@ RS.Utils = {
                 return ft[1];
         }
     },
-    getQueryStringValues: function(url) {
+    getQueryStringValues: function (url) {
         url = new String(url);
 
         var queryStringValues = new Object(),
@@ -739,7 +629,7 @@ RS.Utils = {
 
         return queryStringValues;
     },
-    getBodyHeight: function() {
+    getBodyHeight: function () {
         var height, scrollHeight, offsetHeight;
         if (document.height) {
             height = document.height;
@@ -753,7 +643,7 @@ RS.Utils = {
         }
         return height;
     },
-    getViewPortHeight: function() {
+    getViewPortHeight: function () {
         var height = 0;
         if (window.innerHeight)
             height = window.innerHeight - 18;
@@ -785,6 +675,67 @@ RS.Utils = {
             return JSON.parse(optionsFromAttributes);
 
         return null;
+    },
+    getBindingFromAttributes: function (element) {
+        var text = element.attr('data-bind');
+        if (!text)
+            return null;
+
+        var binding = {};
+
+        var optionsPos = text.indexOf(',');
+        if (optionsPos > -1) {
+            binding.Expression = text.substr(0, optionsPos);
+            binding.Options = text.length > optionsPos + 1 ? JSON.parse(text.substr(optionsPos + 1)) : null
+        }
+        else {
+            binding.Expression = text;
+        }
+
+        return binding;
+    },
+    getValue: function (model, property) {
+        if (!model || !property)
+            return null;
+
+        var value = model;
+
+        do {
+            var pos = property.indexOf('.');
+            if (pos > -1) {
+                var prop = property.substr(0, pos);
+                value = value[prop];
+                if (!value)
+                    break;
+
+                property = property.substr(pos + 1);
+            }
+            else if (property) {
+                value = value[property];
+            }
+        }
+        while (pos > -1);
+
+        return value;
+    },
+    getBoundNames: function (value) {
+        if (!value)
+            return null;
+
+        var m = value.match(/{{\s*[^{}]+\s*}}/g);
+        if (m)
+            m = m.map(function (x) {
+                if (x && x.length >= 4) {
+                    x = x.substr(2);
+                    x = x.substr(0, x.length - 2);
+                    if (x.indexOf('{') == -1)
+                        return x;
+                }
+
+                return x.match(/[\w\.]+/)[0];
+            });
+
+        return m;
     }
 };
 
@@ -827,8 +778,23 @@ RS.Remote = (function () {
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     var defaultErrorMessage = "An error occured on the server. Don't worry, it's not your fault.";
+                    var errorMessage = null;
 
-                    var errorMessage = jqXHR && jqXHR.responseText ? jqXHR.responseText : defaultErrorMessage;
+                    if (jqXHR && jqXHR.responseText) {
+                        try {
+                            var response = JSON.parse(jqXHR.responseText);
+                            if (response.Error)
+                                errorMessage = response.Error;
+                        }
+                        catch (e) {
+                            errorMessage = jqXHR.responseText;
+                        }
+                    }
+
+                    if (!errorMessage && errorThrown && errorThrown.message)
+                        errorMessage = errorThrown.message;
+
+                    var errorMessage = errorMessage || defaultErrorMessage;
 
                     if (callback)
                         callback({
@@ -836,6 +802,9 @@ RS.Remote = (function () {
                         });
                 },
                 beforeSend: function (jqXHR, settings) {
+                    if (!apiToken || apiToken.length === 0)
+                        apiToken = RS.Cache.get('token');
+
                     if (apiToken && apiToken.length) {
                         jqXHR.setRequestHeader('Authentication-Token', apiToken);
                     }
@@ -959,6 +928,353 @@ RS.HandlebarsRenderer = (function () {
 
             if (callback)
                 callback();
+        },
+        GetHtml: function (data, template) {
+            data = data || [];
+            var html = template({ data: data });
+
+            return html;
         }
     };
 })();
+
+RS.BoundElement = function (element) {
+    var self = this;
+
+    this.Element = element;
+    this.InitialExpression = null;
+    this.Matches = null;
+    this.Binding = RS.Utils.getBindingFromAttributes(element);
+
+    var bound = false;
+
+    this.DataBindExpression = this.Binding ? this.Binding.Expression : null;
+    this.BindingOptions = null;
+    if (this.DataBindExpression) {
+        this.InitialExpression = this.DataBindExpression;
+        this.DataBindExpression = this.DataBindExpression.replaceAll('{{', '').replaceAll('}}', '');
+        this.Matches = [this.DataBindExpression];
+    }
+    else {
+        this.InitialExpression = element.text();
+        this.Matches = this.InitialExpression ? RS.Utils.getBoundNames(this.InitialExpression) : null;
+    }
+
+    this.VisibilityExpression = element.attr('data-bind-visible');
+
+    this.solve = function (controller, e) {
+        if (!controller)
+            return;
+
+        if (e && e.Source == self)
+            return;
+
+        if (e && e.IsSource && self.DataBindExpression && controller.Model && bound) {
+            var value = self.getValue();
+
+            var currentValue = controller.Model[self.DataBindExpression];
+
+            if (currentValue == value)
+                return;
+
+            controller.Model[self.DataBindExpression] = value;
+            controller.Model.PubSub.triggerEvent('change', {
+                Source: self,
+                Property: self.DataBindExpression,
+                Value: value
+            });
+        }
+
+        if ((!e || (e && !e.IsSource))) {
+            if (self.Matches && self.Matches.length) {
+                var result = solveFullExpression(controller, self.InitialExpression, self.Matches);
+                self.setValue(value, result);
+            }
+
+            if (self.VisibilityExpression) {
+                var visibilityMatches = RS.Utils.getBoundNames(self.VisibilityExpression);
+                var isVisible = solveFullExpression(controller, self.VisibilityExpression, visibilityMatches);
+                isVisible = isVisible === true || (typeof isVisible == "string" && isVisible.toLowerCase() == 'true');
+                if (isVisible)
+                    element.show();
+                else element.hide();
+            }
+        }
+
+        bound = true;
+    };
+
+    this.setValue = function (value, result) {
+        if (self.Element[0].tagName.toLowerCase() == 'input') {
+            if (self.Element.is(":checkbox")) {
+                if (result)
+                    result = typeof result == 'string' ? result.toLowerCase() == 'true' : result;
+
+                if (result)
+                    self.Element.check();
+                else self.Element.uncheck();
+            }
+            else if (self.Element.is(":radio")) {
+                var currentValue = self.getValue();
+                if (result == currentValue)
+                    self.Element.check();
+                else self.Element.uncheck();
+            }
+            else self.Element.val(result);
+        }
+        else if (self.Element[0].tagName.toLowerCase() == 'select') {
+            self.Element.val(result);
+        }
+        else {
+            var control = self.Element.getControl();
+            if (control) {
+                if (typeof control == 'object') {
+                    control.setValue(result, self.Binding && self.Binding.Options ? self.Binding.Options.Source : null);
+                }
+            }
+            else {
+                self.Element.html(result);
+            }
+        }
+    };
+
+    this.getValue = function () {
+        var value = null;
+
+        var control = self.Element.getControl();
+        if (control)
+            value = typeof control == 'object' ? RS.Utils.getValue(control, self.Binding.Options.Source) : null;
+        else if (self.Element.is(":checkbox"))
+            value = self.Element.is(":checked");
+        else value = self.Element.val();
+
+        return value;
+    };
+
+    this.getEventsTriggeringChange = function () {
+        if (self.Element.is(":checkbox") || self.Element.is(":radio"))
+            return 'change';
+
+        if (self.Element[0].tagName.toLowerCase() == 'input')
+            return 'keyup keydown';
+
+        return 'change';
+    };
+
+    var solveExpression = function (expression, model) {
+        if (!model) {
+            var unsolvedVariables = Parser.parse(expression).variables();
+            if (unsolvedVariables) {
+                model = {};
+                for (var j = 0; j < unsolvedVariables.length; j++)
+                    model[unsolvedVariables[j]] = '';
+            }
+        }
+
+        var processedExpression = preprocessExpression(expression);
+        var parsedExpression = Parser.parse(processedExpression, model).simplify(model);
+        var value = parsedExpression.evaluate();
+
+        return value;
+    };
+
+    var preprocessExpression = function (expression) {
+        if (!expression)
+            return null;
+
+        return expression;
+    };
+
+    var solveFullExpression = function (controller, expression, matches) {
+        if (!expression || !matches || !matches.length)
+            return expression;
+
+        var result = expression;
+        for (var i = 0; i < matches.length; i++) {
+            var expression = matches[i];
+            var value = solveExpression(expression, controller.Model);
+            result = result.replace('{{' + expression + '}}', value);
+        }
+
+        return result;
+    }
+};
+
+RS.Controller = function (name, model) {
+    var self = this;
+
+    this.Name = name;
+    this.Model = model;
+    this.BoundElements = null;
+    this.PubSub = new RS.PubSub();
+
+    var initialize = function () {
+        self.PubSub.addEvent('change');
+    };
+
+    this.bindElement = function (boundElement) {
+        if (!boundElement)
+            return;
+
+        self.BoundElements = self.BoundElements || [];
+        self.BoundElements.push(boundElement);
+
+        if (boundElement.DataBindExpression) {
+            var control = boundElement.Element.getControl();
+
+            if (control && typeof control == 'object') {
+                control.PubSub.addListener('change', function () {
+                    boundElement.solve(self, {
+                        IsSource: true
+                    });
+                });
+            }
+            else {
+                boundElement.Element.bind(boundElement.getEventsTriggeringChange(), function () {
+                    boundElement.solve(self, {
+                        IsSource: true
+                    });
+                });
+            }
+        }
+
+        if (self.Model)
+            boundElement.solve(self);
+    };
+
+    this.setModel = function (model) {
+        this.Model = model;
+        if (!model || !model.PubSub)
+            return;
+
+        solveBoundElements();
+        model.PubSub.addListener('change', function (e) {
+            self.PubSub.triggerEvent('change', e);
+            solveBoundElements(e);
+        });
+    };
+
+    var solveBoundElements = function (e) {
+        if (!self.BoundElements || !self.BoundElements.length)
+            return;
+
+        for (var i = 0; i < self.BoundElements.length; i++) {
+            var boundElement = self.BoundElements[i];
+            boundElement.solve(self, e);
+        }
+    };
+
+    this.refresh = function () {
+        solveBoundElements();
+    };
+
+    initialize();
+};
+
+RS.ControllersManager = function () {
+    var self = this;
+
+    this.Controllers = {};
+
+    this.initialize = function () {
+        getBindings();
+
+        $(document).on('DOMNodeInserted', function (e) {
+            var elementInserted = $(e.target);
+            getBindings(elementInserted.parent());
+        });
+    };
+
+    this.registerModel = function (name, instance) {
+        self.Controllers[name] = self.Controllers[name] || new RS.Controller();
+        var controller = self.Controllers[name];
+        controller.Name = name;
+
+        if (instance) {
+            if (!instance.PubSub) {
+                instance.PubSub = new RS.PubSub();
+                instance.PubSub.addEvent('change');
+            }
+        }
+
+        controller.setModel(instance);
+
+        return controller;
+    };
+
+    var getBindings = function (container) {
+        container = container || $(document);
+
+        var children = container.find("*");
+        children.each(function () {
+            var el = $(this);
+
+            var controller = self.getElementController(el, true);
+            if (!controller)
+                return;
+
+            var boundElement = null;
+
+            if (!el.data('in-binding') && el.attr('data-bind')) {
+                boundElement = new RS.BoundElement(el);
+                el.data('in-binding', true);
+            }
+            else if (!el.data('out-binding') && (el.text() || '').indexOf('{{') > -1) {
+                boundElement = new RS.BoundElement(el);
+                el.data('out-binding', true);
+            }
+            else if (!el.data('visibility-binding') && el.attr('data-bind-visible')) {
+                boundElement = new RS.BoundElement(el);
+                el.data('visibility-binding', true);
+            }
+
+            if (boundElement)
+                controller.bindElement(boundElement);
+
+            if (!el.data('click-binding')) {
+                var clickBinding = el.attr('data-bind-click');
+                if (clickBinding) {
+                    el.click(function () {
+                        var controller = self.getElementController(el);
+                        if (!controller || !controller.Model || !controller.Model[clickBinding] || typeof controller.Model[clickBinding] != 'function')
+                            return;
+
+                        controller.Model[clickBinding](el);
+
+                        return false;
+                    });
+                }
+
+                el.data('click-binding', true);
+            }
+        });
+    };
+
+    this.getElementController = function (el, registerIfNotExists) {
+        if (!el)
+            return null;
+
+        var existingController = el.data('Controller');
+        if (existingController)
+            return existingController;
+
+        var controller = el.parents('[data-controller]:first');
+        if (!controller.length)
+            return null;
+
+        var controllerName = controller.attr('data-controller');
+        if (!controllerName)
+            return null;
+
+        existingController = self.Controllers[controllerName];
+        if (!existingController && registerIfNotExists)
+            existingController = self.registerModel(controllerName);
+
+        el.data('Controller', existingController);
+
+        return existingController;
+    };
+
+    self.initialize();
+};
+RS.ControllersManager = new RS.ControllersManager();
